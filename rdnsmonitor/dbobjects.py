@@ -11,14 +11,22 @@ class Job(Base):
     id = Column(Integer, primary_key=True)
     ipfrom = Column(Integer)
     ipto = Column(Integer)
+    retrieved = Column(DateTime, nullable=True)
     started = Column(DateTime, nullable=True)
     completed = Column(DateTime, nullable=True)
+    nameserver=Column(String(50), nullable=True)
+    nxdomain_count=Column(Integer, nullable=True)
+    error_count=Column(Integer, nullable=True)
+    
     
     def __repr__(self):
-        return "<Job(id={}, ipfrom={}, ipto={}, started={}, completed={})>".format(self.id,
+        return "<Job(id={}, ipblock={}-{}, runtime={} to {}, ns={}, nxdcnt={:d}, errcnt={:d})>".format(self.id,
                                                                                      handy.intToIp(self.ipfrom), 
                                                                                      handy.intToIp(self.ipto), 
-                                                                                     self.started, self.completed)
+                                                                                     self.started, self.completed,
+                                                                                     self.nameserver, 
+                                                                                     self.nxdomain_count,
+                                                                                     self.error_count)
 
 ResultBase = declarative.declarative_base()
 

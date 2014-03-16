@@ -1,6 +1,7 @@
 import logging
 import queue
 import threading
+import datetime
 
 import sqlalchemy
 from sqlalchemy import and_, or_
@@ -14,7 +15,9 @@ log = logging.getLogger(__name__)
 
 config = {"jobsdb_url":"sqlite:///jobs.db",
           "resultsdb_url":"sqlite:///results.db",
-          "block_size":2**20
+          "start_ip":2**24,
+          "end_ip":2**32,
+          "block_size":2**12,
           }
 
 c2server = None
@@ -25,7 +28,6 @@ def getServer(**kwargs):
         c2server = C2Server(**kwargs)
     return c2server
     
-
 class C2Server(object):
     
     JOB_BATCH_SIZE = 1024
@@ -56,18 +58,20 @@ class C2Server(object):
         oldadded = 0
         if added < C2Server.JOB_BATCH_SIZE: 
             log.info("Open jobs depleted, adding old completed jobs")
-            for job in session.query(Job).filter(Job.completed is not None)[:C2Server.JOB_BATCH_SIZE - added]:
+            for job in session.query(Job).filter(Job.completed != None)[:C2Server.JOB_BATCH_SIZE - added]:
                 job.started = job.completed = None
                 self._jobqueue.put(job)
                 oldadded += 1
-            session.commit()
             log.info("Added %d old jobs", oldadded)
         session.close()
         log.info("Jobs queue filled!")
         return True
         
     def retrieveNewJob(self):
+        session = JobdbSession()
         job = self._jobqueue.get()
+        job.retrieved = datetime.datetime.now()
+        session.commit()
         if self._jobqueue.qsize() == 0:
             log.info("Uhoh, jobqueue is empty...")
             self._fillJobQueue()
@@ -78,7 +82,8 @@ class C2Server(object):
         log.debug("Storing %d results...", len(results))
         session = ResultdbSession()
         try:
-            session.add_all([PTRRecord(ip=ipint, ptr=ptrstr) for (ipint, ptrstr) in results])
+            for ptrr in [PTRRecord(ip=ipint, ptr=ptrstr) for (ipint, ptrstr) in results]:
+                session.merge(ptrr)
             session.commit()
         except Exception as ex:
             session.rollback()
@@ -90,9 +95,10 @@ class C2Server(object):
         return
     
     def finishJob(self, job):
-        log.info("Updating job for finish...")
+        log.info("Updating job %s for finish...", repr(job))
         session = JobdbSession()
         session.merge(job)
+        session.commit()
         log.info("Job updated!")
         return True
 
@@ -155,8 +161,8 @@ class C2Server(object):
         
         Perhaps make this a generator function? So we don't need store the blocks in memory?
         """
-        start = 0
-        end = 2**32
+        start = config["start_ip"]
+        end = config["end_ip"]
         blocksize = config["block_size"]
         log.info("Converting IPv4 space from %s to %s into blocks of %d addresses", handy.intToIp(start), handy.intToIp(end-1), blocksize)
         private_ranges = [range(handy.ipToInt("10.0.0.0"), handy.ipToInt("10.0.0.0") + 16777216),

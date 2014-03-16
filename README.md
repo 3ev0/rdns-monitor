@@ -1,4 +1,10 @@
-rdns-monitor
+rDNS-Monitor
 ============
 
-Monitor reverse DNS entries for IPv4 addresses
+Reverse DNS monitor. Queries and stores PTR records of all IPv4 addresses.
+
+Installation
+===========
+Use virtualenv
+Pip install -e .
+
