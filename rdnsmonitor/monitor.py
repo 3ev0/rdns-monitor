@@ -13,13 +13,6 @@ from rdnsmonitor.work import LocalWorker
 
 log = logging.getLogger(__name__)
 
-config = {"jobsdb_url":"sqlite:///jobs.db",
-          "resultsdb_url":"sqlite:///results.db",
-          "start_ip":2**24,
-          "end_ip":2**32,
-          "block_size":2**12,
-          }
-
 c2server = None
 
 def getServer(**kwargs):
@@ -33,7 +26,9 @@ class C2Server(object):
     JOB_BATCH_SIZE = 1024
     
     def __init__(self, newjobsdb=False, **kwargs):
-        config.update(**kwargs)
+        self.config = {}
+        self.config.update(kwargs)
+        log.info("Set config:\n%s", kwargs)
         logging.getLogger('sqlalchemy.engine').setLevel(logging.getLogger().level + 1)
         self._jobsdb = self._initJobsDb(newjobsdb)
         self._resultsdb = self._initResultsDb(False)
@@ -42,6 +37,21 @@ class C2Server(object):
         self._fillJobQueue()  
         return
 
+    def configure(self, **kwargs):
+        if(kwargs):
+            self.config.update(kwargs)
+            log.info("Set config:\n%s", kwargs)
+        else:
+            self.config = {"jobsdb_url":"sqlite:///jobs.db",
+                           "resultsdb_url":"sqlite:///results.db",
+                           "start_ip":2**24,
+                           "end_ip":2**32,
+                           "block_size":2**12,
+                           }
+            log.info("Set default config:\n%s", self.config)
+            
+        return True        
+        
     def watchdog(self):
         # check workers are alive
         # check for neglected jobs
@@ -103,9 +113,9 @@ class C2Server(object):
         return True
 
     def _initResultsDb(self, delete_if_exists):
-        log.info("Initializing results db @ %s...", config["resultsdb_url"])
+        log.info("Initializing results db @ %s...", self.config["resultsdb_url"])
         log.info("Any existing tables will %sbe deleted", "" if delete_if_exists else "not ")
-        db = sqlalchemy.create_engine(config["resultsdb_url"], echo=False)
+        db = sqlalchemy.create_engine(self.config["resultsdb_url"], echo=False)
         ResultdbSession.configure(bind=db)
         if delete_if_exists:
             ResultBase.metadata.drop_all(db, checkfirst=True)
@@ -114,9 +124,9 @@ class C2Server(object):
         return db
     
     def _initJobsDb(self, delete_if_exists):
-        log.info("Initializing db @ %s...", config["jobsdb_url"])
+        log.info("Initializing db @ %s...", self.config["jobsdb_url"])
         log.info("Any existing tables will %sbe deleted", "" if delete_if_exists else "not ")
-        db = sqlalchemy.create_engine(config["jobsdb_url"], echo=False)
+        db = sqlalchemy.create_engine(self.config["jobsdb_url"], echo=False)
         JobdbSession.configure(bind=db)
         if delete_if_exists:
             Base.metadata.drop_all(db, checkfirst=True)
@@ -161,9 +171,9 @@ class C2Server(object):
         
         Perhaps make this a generator function? So we don't need store the blocks in memory?
         """
-        start = config["start_ip"]
-        end = config["end_ip"]
-        blocksize = config["block_size"]
+        start = self.config["start_ip"]
+        end = self.config["end_ip"]
+        blocksize = self.config["block_size"]
         log.info("Converting IPv4 space from %s to %s into blocks of %d addresses", handy.intToIp(start), handy.intToIp(end-1), blocksize)
         private_ranges = [range(handy.ipToInt("10.0.0.0"), handy.ipToInt("10.0.0.0") + 16777216),
                           range(handy.ipToInt("172.16.0.0"), handy.ipToInt("172.16.0.0") + 1048576),

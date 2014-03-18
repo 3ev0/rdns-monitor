@@ -20,13 +20,13 @@ class Job(Base):
     
     
     def __repr__(self):
-        return "<Job(id={}, ipblock={}-{}, runtime={} to {}, ns={}, nxdcnt={:d}, errcnt={:d})>".format(self.id,
+        return "<Job(id={}, ipblock={}-{}, runtime={} to {}, ns={}, nxdcnt={}, errcnt={})>".format(self.id,
                                                                                      handy.intToIp(self.ipfrom), 
                                                                                      handy.intToIp(self.ipto), 
                                                                                      self.started, self.completed,
                                                                                      self.nameserver, 
-                                                                                     self.nxdomain_count,
-                                                                                     self.error_count)
+                                                                                     str(self.nxdomain_count),
+                                                                                     str(self.error_count))
 
 ResultBase = declarative.declarative_base()
 

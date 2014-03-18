@@ -1,4 +1,8 @@
+import configparser
+
 from sqlalchemy.orm import scoped_session, sessionmaker 
+
+
 
 JobdbSession = scoped_session(sessionmaker())
 ResultdbSession = scoped_session(sessionmaker())
@@ -18,3 +22,5 @@ nameservers = ["8.8.8.8",
                "4.2.2.4",
                "4.2.2.5",
                "4.2.2.6"]
+
+config = configparser.ConfigParser()
