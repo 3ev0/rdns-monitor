@@ -171,9 +171,9 @@ class C2Server(object):
         
         Perhaps make this a generator function? So we don't need store the blocks in memory?
         """
-        start = self.config["start_ip"]
-        end = self.config["end_ip"]
-        blocksize = self.config["block_size"]
+        start = handy.ipToInt(self.config["start_ip"])
+        end = handy.ipToInt(self.config["end_ip"])
+        blocksize = int(self.config["block_size"])
         log.info("Converting IPv4 space from %s to %s into blocks of %d addresses", handy.intToIp(start), handy.intToIp(end-1), blocksize)
         private_ranges = [range(handy.ipToInt("10.0.0.0"), handy.ipToInt("10.0.0.0") + 16777216),
                           range(handy.ipToInt("172.16.0.0"), handy.ipToInt("172.16.0.0") + 1048576),
