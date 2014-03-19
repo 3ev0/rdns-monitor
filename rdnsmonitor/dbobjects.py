@@ -1,7 +1,7 @@
 import sqlalchemy.ext.declarative as declarative
 from sqlalchemy import Integer, Column, Boolean, String, DateTime
 
-import handy
+from rdnsmonitor import handy
 
 Base = declarative.declarative_base()
 
